@@ -7,6 +7,8 @@
       <img v-if="expression === 'idle1'" class="child" src="../assets/resources/idle/IDLE_15_FRMS_V2.gif" />
       <img v-if="expression === 'idle2'" class="child" src="../assets/resources/idle/IDLE_25_FRMS_V3.gif" />
       <img v-if="expression === 'idle3'" class="child" src="../assets/resources/idle/IDLE_15_FRMS_V1.gif" />
+
+      <img v-if="expression === null && this.talking === true" class="child" src="../assets/resources/normal/TALKING_15_FRMS_V1_loop.gif" />
    
   </div>
 </template>
@@ -15,31 +17,32 @@ export default {
   name: 'HelloWorld',
   data: () => ({
     recognition: null,
-    talking: false,
     expression: null,
-    list: ['undefined', 'idle1', 'idle2', 'idle3']
+    talking: false,
+    idle: ['undefined', 'idle1', 'idle2', 'idle3']
   }),
   methods: {
     timer() {
       setInterval(() => {
         // make switch for transition expression from normal to angry or kind
         // make if statement to determine what list to use when transitioned
-          this.expression = this.list[this.random()];
+        if(!this.talking) {
+          this.expression = this.idle[this.random()];
           setTimeout(() => {
               this.expression = null;
           }, 5000)
+        }
       }, 12000)
+      
     },
     random() {
-      return Math.floor(Math.random() * Math.floor(this.list.length)) + 1;
+      return Math.floor(Math.random() * Math.floor(this.idle.length)) + 1;
     },
     face(face) {
       switch(face) {
-        case 'angry':
+        case 'talking':
         break;
-        case 'kind':
-        break;
-        case 'normal':
+        case 'idle':
         break;
       }
     },
@@ -71,26 +74,44 @@ export default {
         console.log(e)
       }
     },
+    activeTalk() {
+      this.talking = true;
+    },
+    deativeTalk() {
+      this.talking = false;
+    },
     detectSilence(
       stream,
     onSoundEnd = {},
     onSoundStart = {},
+    onTalkStart = {},
+    onTalkend = {},
     silence_delay = 500,
     min_decibels = -80) {
       const ctx = new AudioContext();
       const analyser = ctx.createAnalyser();
       const streamNode = ctx.createMediaStreamSource(stream);
+      let bufferLen = analyser.frequencyBinCount;
       streamNode.connect(analyser);
       analyser.minDecibels = min_decibels;
+      analyser.fftSize = 256;
+     
+      const data = new Uint8Array(bufferLen); // will hold our data
+      
+      
+     
 
-      const data = new Uint8Array(analyser.frequencyBinCount); // will hold our data
       let silence_start = performance.now();
       let triggered = false; // trigger only once per silence event
 
       function loop(time) {
         requestAnimationFrame(loop); // we'll loop every 60th of a second to check
         analyser.getByteFrequencyData(data); // get current data
+        // console.log(data)
         if (data.some(v => v)) { // if there is data above the given db limit
+          console.log('start')
+          onTalkStart();
+
           if(triggered){
             triggered = false;
             onSoundStart();
@@ -98,7 +119,10 @@ export default {
           silence_start = time; // set it to now
         }
         if (!triggered && time - silence_start > silence_delay) {
+          console.log('end')
+          onTalkend();
           onSoundEnd();
+          
           triggered = true;
         }
       }
@@ -106,13 +130,13 @@ export default {
     }
   },
   created() {
-    navigator.mediaDevices.getUserMedia({audio:true}).then(stream => this.detectSilence(stream, this.stopSpeech, this.startSpeech))
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream => this.detectSilence(stream, this.stopSpeech, this.startSpeech, this.activeTalk, this.deativeTalk))
     .catch(e => console.log(e.message));
   },
   mounted() {
     this.startup();
     this.timer();
-  }
+  },
 }
 </script>
 <style scoped>
