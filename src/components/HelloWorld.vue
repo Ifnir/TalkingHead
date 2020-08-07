@@ -2,13 +2,15 @@
   <div>
     <img class="parent" src="../assets/resources/bg_30FRM_loop.gif" />
     
-      <img v-if="expression === undefined || expression === null" class="child" src="../assets/resources/idle/MAIN_FRAME.gif" />
+      <img v-if="expression === undefined || expression === null && mood === null" class="child" src="../assets/resources/idle/MAIN_FRAME.gif" />
 
-      <img v-if="expression === 'idle1'" class="child" src="../assets/resources/idle/IDLE_15_FRMS_V2.gif" />
-      <img v-if="expression === 'idle2'" class="child" src="../assets/resources/idle/IDLE_25_FRMS_V3.gif" />
-      <img v-if="expression === 'idle3'" class="child" src="../assets/resources/idle/IDLE_15_FRMS_V1.gif" />
+      <img v-if="expression === 'idle1'" class="child" src="../assets/resources/angry/IDLE_15_FRMS_V2.gif" />
+      <img v-if="expression === 'idle2'" class="child" src="../assets/resources/angry/IDLE_25_FRMS_V3.gif" />
+      <img v-if="expression === 'idle3'" class="child" src="../assets/resources/angry/IDLE_15_FRMS_V1.gif" />
 
-      <img v-if="expression === null && this.talking === true" class="child" src="../assets/resources/normal/TALKING_15_FRMS_V1_loop.gif" />
+      <img v-if="expression === undefined || expression === null && mood === 'angry'" class="child" src="../assets/resources/angry/MAIN_FRAME.gif" />
+
+      <img v-if="expression === null && this.talking === true" class="child" src="../assets/resources/angry/talk/TALKING_10_FRMS_V1.gif" />
    
   </div>
 </template>
@@ -18,8 +20,11 @@ export default {
   data: () => ({
     recognition: null,
     expression: null,
+    mood: 'angry',
     talking: false,
-    idle: ['undefined', 'idle1', 'idle2', 'idle3']
+    idle: ['undefined', 'idle1', 'idle2', 'idle3'],
+    angry: [],
+    transition: ['atn', 'nta']
   }),
   methods: {
     timer() {
@@ -38,13 +43,8 @@ export default {
     random() {
       return Math.floor(Math.random() * Math.floor(this.idle.length)) + 1;
     },
-    face(face) {
-      switch(face) {
-        case 'talking':
-        break;
-        case 'idle':
-        break;
-      }
+    randomtalk() {
+      return Math.random() < 0.5 ? 'v1' : 'v2'
     },
     startup() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -109,7 +109,7 @@ export default {
         analyser.getByteFrequencyData(data); // get current data
         // console.log(data)
         if (data.some(v => v)) { // if there is data above the given db limit
-          console.log('start')
+          //console.log('start')
           onTalkStart();
 
           if(triggered){
@@ -119,7 +119,7 @@ export default {
           silence_start = time; // set it to now
         }
         if (!triggered && time - silence_start > silence_delay) {
-          console.log('end')
+          //console.log('end')
           onTalkend();
           onSoundEnd();
           
